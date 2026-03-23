@@ -1,0 +1,8 @@
+{
+  "name": "factory-autoresearch-plugin",
+  "description": "Global Droid autoresearch workflow with debate droids, monitoring, confidence scoring, and manual slash commands.",
+  "version": "1.0.0",
+  "author": {
+    "name": "mrsachou"
+  }
+}

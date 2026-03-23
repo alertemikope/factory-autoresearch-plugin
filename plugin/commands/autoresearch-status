@@ -1,0 +1,200 @@
+#!/usr/bin/env python3
+import json
+import math
+import statistics
+import sys
+from pathlib import Path
+
+
+def find_project_root(start: Path) -> Path | None:
+    current = start.resolve()
+    for candidate in [current, *current.parents]:
+        if (candidate / ".factory").exists():
+            return candidate
+    return None
+
+
+def latest_run_dir(run_root: Path) -> Path | None:
+    if not run_root.exists():
+        return None
+    runs = [p for p in run_root.iterdir() if p.is_dir()]
+    if not runs:
+        return None
+    return sorted(runs, key=lambda p: p.name)[-1]
+
+
+def load_jsonl(path: Path):
+    rows = []
+    if not path.exists():
+        return rows
+    for line in path.read_text().splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return rows
+
+
+def numeric_metric(row):
+    for key in ("metric", "metric_value", "score"):
+        value = row.get(key)
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return float(value)
+    return None
+
+
+def confidence_band(score):
+    if score is None:
+        return "n/a"
+    if math.isinf(score) or score >= 2.0:
+        return "likely-real"
+    if score >= 1.0:
+        return "marginal"
+    return "within-noise"
+
+
+def format_pct(value):
+    if value is None:
+        return "n/a"
+    sign = "+" if value > 0 else ""
+    return f"{sign}{value:.2f}%"
+
+
+def format_conf(score):
+    if score is None:
+        return "n/a"
+    if math.isinf(score):
+        return "∞"
+    return f"{score:.2f}x"
+
+
+def compute_status(rows):
+    metric_rows = []
+    for row in rows:
+        metric = numeric_metric(row)
+        if metric is not None:
+            metric_rows.append((row, metric))
+    if not metric_rows:
+        return None
+
+    first_row, baseline = metric_rows[0]
+    direction = first_row.get("direction", "lower")
+    if direction not in {"higher", "lower"}:
+        direction = "lower"
+
+    if direction == "lower":
+        best_row, best_metric = min(metric_rows, key=lambda item: item[1])
+    else:
+        best_row, best_metric = max(metric_rows, key=lambda item: item[1])
+
+    current_row, current_metric = metric_rows[-1]
+    best_improvement = (baseline - best_metric) if direction == "lower" else (best_metric - baseline)
+    improvement_pct = None if baseline == 0 else (best_improvement / abs(baseline)) * 100.0
+
+    values = [metric for _, metric in metric_rows]
+    confidence_score = None
+    if len(values) >= 3:
+        median = statistics.median(values)
+        deviations = [abs(value - median) for value in values]
+        mad = statistics.median(deviations)
+        if mad == 0:
+            confidence_score = math.inf if best_improvement > 0 else 0.0
+        else:
+            confidence_score = abs(best_improvement) / mad
+
+    experiment_rows = [row for row, _ in metric_rows if row.get("status") != "baseline" and row.get("iteration") != 0]
+    runs_completed = len(experiment_rows)
+
+    return {
+        "metric_name": current_row.get("metric_name", "metric"),
+        "direction": direction,
+        "runs_completed": runs_completed,
+        "baseline_metric": baseline,
+        "current_metric": current_metric,
+        "best_metric": best_metric,
+        "best_iteration": best_row.get("iteration", "?"),
+        "improvement_pct": improvement_pct,
+        "confidence_score": confidence_score,
+        "confidence_band": confidence_band(confidence_score),
+        "last_decision": current_row.get("decision", current_row.get("status", "n/a")),
+    }
+
+
+def print_table(rows):
+    if not rows:
+        print("No recorded experiments yet.")
+        return
+
+    tail = rows[-10:]
+    print("\nRecent results")
+    print("| iter | metric | decision | hypothesis |")
+    print("| --- | ---: | --- | --- |")
+    for row in tail:
+        metric = numeric_metric(row)
+        hypothesis = row.get("hypothesis") or row.get("variant") or ""
+        print(
+            f"| {row.get('iteration', '?')} | {metric if metric is not None else 'n/a'} | {row.get('decision', row.get('status', 'n/a'))} | {hypothesis} |"
+        )
+
+
+def main():
+    root = find_project_root(Path.cwd())
+    if root is None:
+        print("No project .factory directory found from the current working directory.")
+        sys.exit(1)
+
+    if len(sys.argv) > 1:
+        run_dir = Path(sys.argv[1]).expanduser().resolve()
+    else:
+        run_dir = latest_run_dir(root / ".factory" / "autoresearch" / "runs")
+
+    if run_dir is None or not run_dir.exists():
+        print("No autoresearch runs found.")
+        sys.exit(0)
+
+    status_path = run_dir / "status.json"
+    results_path = run_dir / "results.jsonl"
+    rows = load_jsonl(results_path)
+
+    status = None
+    if status_path.exists():
+        try:
+            status = json.loads(status_path.read_text())
+        except json.JSONDecodeError:
+            status = None
+
+    computed = compute_status(rows)
+    merged = computed or status
+    if status and computed:
+        merged = {**status, **computed}
+        merged.setdefault("confidence_band", confidence_band(merged.get("confidence_score")))
+
+    if not merged:
+        print(f"Run directory: {run_dir}")
+        print("No status data available yet.")
+        sys.exit(0)
+
+    print(f"Run directory: {run_dir}")
+    print(
+        "Widget: "
+        f"{merged.get('runs_completed', 0)} runs | "
+        f"best {merged.get('metric_name', 'metric')}: {merged.get('best_metric', 'n/a')} "
+        f"({format_pct(merged.get('improvement_pct'))}) | "
+        f"conf {format_conf(merged.get('confidence_score'))} [{merged.get('confidence_band', 'n/a')}] | "
+        f"last {merged.get('last_decision', 'n/a')}"
+    )
+    print("\nBest run")
+    print(f"- iteration: {merged.get('best_iteration', 'n/a')}")
+    print(f"- baseline: {merged.get('baseline_metric', 'n/a')}")
+    print(f"- best: {merged.get('best_metric', 'n/a')}")
+    print(f"- improvement: {format_pct(merged.get('improvement_pct'))}")
+    print(f"- confidence: {format_conf(merged.get('confidence_score'))} [{merged.get('confidence_band', 'n/a')}]")
+
+    print_table(rows)
+
+
+if __name__ == "__main__":
+    main()

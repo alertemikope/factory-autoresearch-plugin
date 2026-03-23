@@ -1,0 +1,14 @@
+{
+  "name": "factory-autoresearch-plugin",
+  "description": "Marketplace for the Factory autoresearch plugin.",
+  "owner": {
+    "name": "mrsachou"
+  },
+  "plugins": [
+    {
+      "name": "factory-autoresearch-plugin",
+      "description": "Global Droid autoresearch workflow with debate droids, monitoring, confidence scoring, and manual slash commands.",
+      "source": "./plugin"
+    }
+  ]
+}
