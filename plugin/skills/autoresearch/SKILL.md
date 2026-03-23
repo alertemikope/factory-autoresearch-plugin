@@ -36,14 +36,14 @@ If any critical field is missing, ask for it before launching the loop.
 
 ## Startup protocol
 
-1. Read `references/loop.md`, `references/debate.md`, `references/evaluation.md`, `references/logging.md`, and `references/parallel.md`.
+1. Read `references/loop.md`, `references/debate.md`, `references/evaluation.md`, `references/logging.md`, `references/parallel.md`, and `references/run-control.md`.
 2. Inspect the repo and define the smallest safe editable scope.
 3. Choose the evaluation mode:
    - `direct`: benchmark, tests, typecheck, build, latency, coverage, error count.
    - `harness`: prompt, skill, workflow, or agent behavior scored by a repeatable evaluator.
 4. Establish a baseline before any experiment.
-5. Initialize the run with `scripts/init_run.py` so `run.md`, `results.jsonl`, `status.json`, `lessons.md`, and `summary.md` are created in a consistent format.
-6. Maintain the live dashboard state with `scripts/update_status.py` after each completed experiment.
+5. Initialize the run with `~/.factory/skills/autoresearch/scripts/init_run.py` so `run.md`, `results.jsonl`, `status.json`, `lessons.md`, and `summary.md` are created in a consistent format.
+6. Maintain the live dashboard state with `~/.factory/skills/autoresearch/scripts/update_status.py` after each completed experiment.
 7. Initialize a single pinned TodoWrite line for the live run summary.
 
 ## Monitoring
@@ -51,9 +51,11 @@ If any critical field is missing, ask for it before launching the loop.
 Factory project config cannot add a fully custom native widget above the chat input, so use the closest supported pattern:
 
 - keep `todoDisplayMode` pinned for this project
-- maintain one live TodoWrite item during the run
+- maintain exactly one live TodoWrite item during the run
 - persist the same snapshot to `status.json`
 - expose a richer table view through `/autoresearch-status`
+
+Do not replace the widget with a long visible task plan during an active run.
 
 Update the pinned status after the baseline and after every completed experiment.
 
@@ -74,12 +76,12 @@ For each iteration:
 5. Ask `research-judge` to select:
    - one experiment for serial execution, or
    - up to two experiments for isolated parallel execution.
-6. Ask `research-implementer` to implement the selected experiment, or each isolated variant if parallel mode was approved.
+6. Ask `research-implementer` to implement the selected experiment, or each isolated variant if parallel mode was approved. Do not make experiment code edits directly from the orchestrator.
 7. Run the selected experiment.
 8. Evaluate mechanically.
 9. Decide: `keep`, `discard`, `retry`, `pivot`, or `stop`.
 10. Write the result row to `results.jsonl`.
-11. Run `scripts/update_status.py` for the current run directory, then update the pinned TodoWrite line from the resulting `status.json`.
+11. Run `~/.factory/skills/autoresearch/scripts/update_status.py` for the current run directory, then update the pinned TodoWrite line from the resulting `status.json`.
 12. Write a short lesson.
 
 Never treat debate as proof. Only measured results can promote a change.
@@ -91,6 +93,7 @@ Never treat debate as proof. Only measured results can promote a change.
 - Retry only when noise or nondeterminism is the likely cause.
 - Pivot after repeated discards on the same strategy.
 - Prefer the simpler change when results are materially equal.
+- If the user asks for a progress update, summarize and continue automatically unless they explicitly ask to stop or pause.
 
 ## Parallel mode
 
