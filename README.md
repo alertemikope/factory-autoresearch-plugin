@@ -8,6 +8,16 @@ Factory autoresearch plugin with:
 - confidence scoring based on MAD
 - `status.json` + `results.jsonl` run artifacts
 
+## Inspiration / sources
+
+This plugin was inspired by the following projects:
+
+- [karpathy/autoresearch](https://github.com/karpathy/autoresearch) — the original autoresearch loop
+- [davebcn87/pi-autoresearch](https://github.com/davebcn87/pi-autoresearch) — monitoring, confidence scoring, and persistent experiment tracking
+- [leo-lilinxiao/codex-autoresearch](https://github.com/leo-lilinxiao/codex-autoresearch) — parallel experiments, resumability, and structured orchestration
+- [uditgoenka/autoresearch](https://github.com/uditgoenka/autoresearch) — generalized autoresearch workflows beyond pure ML training
+- [greyhaven-ai/autocontext](https://github.com/greyhaven-ai/autocontext) — multi-role improvement loops and persistent learning patterns
+
 ## What it installs
 
 - a Factory marketplace at the repo root
