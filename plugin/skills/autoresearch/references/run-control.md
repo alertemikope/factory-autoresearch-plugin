@@ -29,6 +29,15 @@ If the user asks for an update during a run:
 2. do not ask whether to continue
 3. continue automatically unless the user explicitly asks to stop or pause
 
+## When gains stall
+
+If the current line of attack stops producing gains:
+
+1. think outside the box instead of repeating tiny variants
+2. question current assumptions and search for a different angle
+3. use `WebSearch` or `FetchUrl` when outside research could unblock the run
+4. treat external ideas as hypotheses and validate them mechanically before promotion
+
 ## Implementation ownership
 
 All experiment changes in the target repo should be made through `research-implementer`, except for autoresearch-owned run artifacts.

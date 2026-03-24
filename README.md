@@ -42,6 +42,28 @@ cd factory-autoresearch-plugin
 }
 ```
 
+and lets the installer choose a model per role:
+
+- `research-explorer`
+- `research-critic-a`
+- `research-critic-b`
+- `research-judge`
+- `research-implementer`
+
+Press Enter to accept the default for each role.
+
+### Non-interactive install with explicit model mapping
+
+```bash
+AUTORESEARCH_MODEL_EXPLORER='custom:claude-sonnet-4-6' \
+AUTORESEARCH_MODEL_CRITIC_A='custom:gpt-5.4(high)' \
+AUTORESEARCH_MODEL_CRITIC_B='custom:claude-opus-4-6(thinking:32000)' \
+AUTORESEARCH_MODEL_JUDGE='custom:gpt-5.4(xhigh)' \
+AUTORESEARCH_MODEL_IMPLEMENTER='custom:gpt-5.3-codex-spark' \
+AUTORESEARCH_SKIP_PROMPTS=1 \
+./install-global.sh
+```
+
 ## Required custom model aliases
 
 This plugin is configured to use these custom model names in `~/.factory/settings.json` under `customModels[].model`:
@@ -57,7 +79,7 @@ This plugin is configured to use these custom model names in `~/.factory/setting
 If another computer does not have these aliases, either:
 
 1. add the same custom model entries to `~/.factory/settings.json`, or
-2. edit the droid files under `plugin/droids/` before installing.
+2. provide different values during `./install-global.sh`.
 
 ## Usage
 

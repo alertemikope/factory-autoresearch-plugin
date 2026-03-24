@@ -95,6 +95,13 @@ Never treat debate as proof. Only measured results can promote a change.
 - Prefer the simpler change when results are materially equal.
 - If the user asks for a progress update, summarize and continue automatically unless they explicitly ask to stop or pause.
 
+## Stuck recovery
+
+- When the search stops finding gains, do not stay trapped in minor local tweaks.
+- Think outside the box: revisit assumptions, test simpler ideas, test bolder ideas, and change the search space when the current framing is exhausted.
+- If local evidence is insufficient or repeated pivots fail to produce gains, use `WebSearch` and `FetchUrl` to look for outside techniques, papers, implementation patterns, or benchmark ideas.
+- Treat outside research as hypothesis generation only. Bring the idea back into the same mechanical evaluation loop before keeping it.
+
 ## Parallel mode
 
 Parallel mode is optional.
